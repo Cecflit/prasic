@@ -1,0 +1,9 @@
+*.o
+*.d
+prasic*
+*.stl
+*~
+/tt_reborn*
+zahraj_kolo
+in/
+out/
