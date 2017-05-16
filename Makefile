@@ -4,7 +4,7 @@ DEPS = $(SOURCES:%.cpp=%.d)
 TARGET = prasic
 
 CFLAGS = -std=gnu++11
-LFLAGS = -lm
+LFLAGS = -lm -lboost_filesystem -lboost_system
 
 all: $(TARGET)
 

@@ -7,9 +7,12 @@
 #include <cstdlib>
 #include <ctime>
 #include <map>
+#include <dirent.h>
 
 #include "nahoda.h"
 #include "prase.h"
+
+#include <boost/filesystem.hpp>
 
 using namespace std;
 
@@ -89,6 +92,8 @@ void nacti_usek(FILE* f, string& slovo, char& znak, char ukoncovaci_znak) {
     if (znak == '\\') {
       slovo.push_back(znak);
       znak = fgetc(f);
+      slovo.push_back(znak);
+      znak = fgetc(f);
     }
   } while (znak != ukoncovaci_znak && !feof(f));
   slovo.push_back(znak);
@@ -98,6 +103,10 @@ void nacti_usek(FILE* f, string& slovo, char& znak, char ukoncovaci_znak) {
 void nacti_zdroj() {
   string zdroj = "in/" + nazev_souboru;
   FILE *f = fopen(zdroj.c_str(), "r");
+
+  if (!f) {
+    return;
+  }
 
   char znak = ' ';
   string slovo;
@@ -135,6 +144,7 @@ void nacti_zdroj() {
             pokracuj = !(byla_hvezda && (znak == '/'));
             byla_hvezda = znak == '*';
           }
+          znak = fgetc(f);
           continue;
         } else if (znak == '/') {
           // komentář //
@@ -194,6 +204,10 @@ void uloz_zdroj() {
   string zdroj = "out/" + nazev_souboru;
   FILE *f = fopen(zdroj.c_str(), "w");
 
+  if (!f) {
+    return;
+  }
+
   int odsazeni = 0;
   for (vector<Prase>::iterator it = slova.begin(); it != slova.end(); ++it) {
     fputs(it->text.c_str(), f);
@@ -216,8 +230,36 @@ void uloz_zdroj() {
     }
   }
 
+  slova.clear();
+
   fclose(f);
 }
+
+void udelej_soubor(string nazev, string ext) {
+  boost::filesystem::path outf("out/" + nazev);
+  boost::filesystem::path outf_dir = outf.parent_path();
+  if (!boost::filesystem::exists(outf_dir)) {
+    boost::filesystem::create_directory(outf_dir);
+  }
+
+  if (ext == ".cpp" || ext == ".hpp" || ext == ".c" || ext == ".h") {
+    cout << "Dělám " << nazev << "\n";
+    nazev_souboru = nazev;
+    nacti_zdroj();
+    uloz_zdroj();
+  } else {
+    boost::filesystem::copy_file(boost::filesystem::path("in/" + nazev), outf);
+  }
+}
+
+/*void projed_slozku(DIR* dir, string dir_str) {
+  dirent* pdir;
+  while (pdir = readdir(dir)) {
+    if (pdir->d_type == DT_DIR) {
+      projed_slozku();
+    }
+  }
+}*/
 
 int main(int argc, char** arg) {
   srandom(time(0));
@@ -225,9 +267,23 @@ int main(int argc, char** arg) {
   slovnik.clear();
   nacti_slovnik();
 
-  nazev_souboru = "main.cpp";
-  nacti_zdroj();
-  uloz_zdroj();
+  //DIR* dir;
+  //dir = opendir("in");
+  //projed_slozku(dir, "");
+  if (boost::filesystem::exists(boost::filesystem::path("./out"))) {
+    boost::filesystem::remove_all(boost::filesystem::path("./out"));
+  }
+  for ( boost::filesystem::recursive_directory_iterator end, dir("./in");
+    dir != end; ++dir ) {
+    //std::cout << *dir << "\n";  // full path
+    string soub = dir->path().string();
+    soub = soub.substr(5, soub.size());
+    std::cout << soub << "\n";  // full path
+    udelej_soubor(soub, dir->path().extension().string());
+    //std::cout << dir->path().filename() << "\n"; // just last bit
+  }
+
+  //udelej_soubor("main.cpp");
 
   uloz_slovnik();
 
