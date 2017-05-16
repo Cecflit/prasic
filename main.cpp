@@ -224,7 +224,7 @@ void uloz_zdroj() {
           fprintf(f, "  ");
         }
       }
-      if ((it->chce_mezeru && (it+1)->chce_mezeru) || nahodne(6) == 0) {
+      if ((it->chce_mezeru && ((it+1)->chce_mezeru || (it != slova.begin() && (it-1)->je_inklud))) || nahodne(6) == 0) {
         fprintf(f, " ");
       }
     }
